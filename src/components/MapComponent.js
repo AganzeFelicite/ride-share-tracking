@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   GoogleMap,
   LoadScript,
@@ -9,7 +9,13 @@ import {
 import ETADisplay from "./ETADisplay";
 import carIcon from "../car.png";
 
+const center = { lat: -1.939826787816454, lng: 30.0445426438232 };
+const startingPoint = { lat: -1.939826787816454, lng: 30.0445426438232 };
+const endingPoint = { lat: -1.9365670876910166, lng: 30.13020167024439 };
+
 const MapComponent = () => {
+  const [nextStop, setNextStop] = useState(null);
+  const [loadedMap, setLoadedMap] = useState(false);
   const containerStyle = {
     width: "800px",
     height: "600px",
@@ -20,10 +26,11 @@ const MapComponent = () => {
     lng: 30.0445426438232,
   };
 
-  const [driverLocation, setDriverLocation] = React.useState(center);
-  const [estimatedTime, setEstimatedTime] = React.useState(0);
+  const [driverLocation, setDriverLocation] = useState(center);
+  const [estimatedTime, setEstimatedTime] = useState(0);
+  const mapRef = useRef(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const interval = setInterval(() => {
       // Simulate driver's movement along the route
       setDriverLocation((prevLocation) => ({
@@ -35,7 +42,7 @@ const MapComponent = () => {
     return () => clearInterval(interval);
   }, []);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const interval = setInterval(() => {
       setDriverLocation((prevLocation) => ({
         lat: prevLocation.lat + 0.0001,
@@ -105,72 +112,153 @@ const MapComponent = () => {
         nextStop = stop;
       }
     }
-
+    setNextStop(nextStop);
     return nextStop;
   };
 
+  const onMapLoad = (map) => {
+    mapRef.current = map;
+  };
+
+  useEffect(() => {
+    if (mapRef.current) {
+      const bounds = new window.google.maps.LatLngBounds();
+      const path = [
+        center,
+        { lat: -1.9355377074007851, lng: 30.060163829002217 },
+        { lat: -1.9358808342336546, lng: 30.08024820994666 },
+        { lat: -1.9489196023037583, lng: 30.092607828989397 },
+        { lat: -1.9592132952818164, lng: 30.106684061788073 },
+        { lat: -1.9487480402200394, lng: 30.126596781356923 },
+        { lat: -1.9365670876910166, lng: 30.13020167024439 },
+      ];
+
+      path.forEach((point) => {
+        bounds.extend(new window.google.maps.LatLng(point.lat, point.lng));
+      });
+
+      mapRef.current.fitBounds(bounds);
+    }
+  }, [mapRef]);
+
   return (
     <>
-      <LoadScript googleMapsApiKey="">
-        <GoogleMap mapContainerStyle={containerStyle} center={center} zoom={12}>
-          <Marker position={center} /> {/* Initial position marker */}
-          <Marker
-            position={driverLocation}
-            icon={{
-              url: carIcon,
-              scaledSize: new window.google.maps.Size(40, 40), // Default car icon size
-            }}
-          />
-          <Circle
-            center={{ lat: -1.9355377074007851, lng: 30.060163829002217 }}
-            radius={50}
-            options={{ fillColor: "yellow", strokeColor: "yellow" }}
-          />
-          <Circle
-            center={{ lat: -1.9358808342336546, lng: 30.08024820994666 }}
-            radius={50}
-            options={{ fillColor: "yellow", strokeColor: "yellow" }}
-          />
-          <Circle
-            center={{ lat: -1.9489196023037583, lng: 30.092607828989397 }}
-            radius={50}
-            options={{ fillColor: "yellow", strokeColor: "yellow" }}
-          />
-          <Circle
-            center={{ lat: -1.9592132952818164, lng: 30.106684061788073 }}
-            radius={50}
-            options={{ fillColor: "yellow", strokeColor: "yellow" }}
-          />
-          <Circle
-            center={{ lat: -1.9487480402200394, lng: 30.126596781356923 }}
-            radius={50}
-            options={{ fillColor: "yellow", strokeColor: "yellow" }}
-          />
-          <Circle
-            center={{ lat: -1.9365670876910166, lng: 30.13020167024439 }}
-            radius={50}
-            options={{ fillColor: "yellow", strokeColor: "yellow" }}
-          />
-          <Polyline
-            path={[
-              center,
-              { lat: -1.9355377074007851, lng: 30.060163829002217 },
-              { lat: -1.9358808342336546, lng: 30.08024820994666 },
-              { lat: -1.9489196023037583, lng: 30.092607828989397 },
-              { lat: -1.9592132952818164, lng: 30.106684061788073 },
-              { lat: -1.9487480402200394, lng: 30.126596781356923 },
-              { lat: -1.9365670876910166, lng: 30.13020167024439 },
-            ]}
-            options={{
-              strokeColor: "black", // Change the polyline color to black
-              strokeWeight: 10,
-            }}
-          />
-        </GoogleMap>
+      <LoadScript googleMapsApiKey="" onLoad={() => setLoadedMap(true)}>
+        {loadedMap && window.google ? (
+          <GoogleMap
+            mapContainerStyle={{ height: "400px", width: "800px" }}
+            zoom={13}
+            center={center}
+            heading={40}
+          >
+            <Circle
+              center={startingPoint}
+              radius={100}
+              options={{
+                strokeColor: "blue",
+                strokeOpacity: 0.8,
+                strokeWeight: 2,
+                fillColor: "blue",
+                fillOpacity: 0.35,
+              }}
+            />
+
+            <Circle
+              center={{ lat: -1.9355377074007851, lng: 30.060163829002217 }}
+              radius={100}
+              options={{
+                fillColor: "yellow",
+                strokeColor: "yellow",
+                strokeWeight: 5,
+              }}
+            />
+            <Circle
+              center={{ lat: -1.9358808342336546, lng: 30.08024820994666 }}
+              radius={100}
+              options={{
+                fillColor: "yellow",
+                strokeColor: "yellow",
+                strokeOpacity: 0.8,
+              }}
+            />
+            <Circle
+              center={{ lat: -1.9489196023037583, lng: 30.092607828989397 }}
+              radius={100}
+              options={{
+                strokeOpacity: 0.8,
+                fillColor: "yellow",
+                strokeColor: "yellow",
+                strokeWeight: 5,
+              }}
+            />
+            <Circle
+              center={{ lat: -1.9592132952818164, lng: 30.106684061788073 }}
+              radius={100}
+              options={{
+                strokeOpacity: 0.8,
+                fillColor: "yellow",
+                strokeColor: "yellow",
+                strokeWeight: 5,
+              }}
+            />
+            <Circle
+              center={{ lat: -1.9487480402200394, lng: 30.126596781356923 }}
+              radius={100}
+              options={{
+                strokeOpacity: 0.8,
+                fillColor: "yellow",
+                strokeColor: "yellow",
+                strokeWeight: 5,
+              }}
+            />
+            <Circle
+              center={{ lat: -1.9365670876910166, lng: 30.13020167024439 }}
+              radius={100}
+              options={{
+                strokeOpacity: 0.8,
+                fillColor: "yellow",
+                strokeColor: "yellow",
+                strokeWeight: 5,
+              }}
+            />
+            <Polyline
+              path={[
+                startingPoint,
+                { lat: -1.9355377074007851, lng: 30.060163829002217 },
+                { lat: -1.9358808342336546, lng: 30.08024820994666 },
+                { lat: -1.9489196023037583, lng: 30.092607828989397 },
+                { lat: -1.9592132952818164, lng: 30.106684061788073 },
+                { lat: -1.9487480402200394, lng: 30.126596781356923 },
+                endingPoint,
+              ]}
+              options={{
+                strokeColor: "black",
+                strokeWeight: 5,
+              }}
+            />
+            {/* <Marker position={startingPoint} label="Starting Point" />
+            <Marker position={endingPoint} label="Ending Point" /> */}
+            <Marker position={endingPoint} />
+            <Circle
+              center={startingPoint}
+              radius={100} // Adjust the radius value to change the size of the circle
+              options={{
+                strokeColor: "blue",
+                strokeOpacity: 0.8,
+                strokeWeight: 2,
+                fillColor: "blue",
+                fillOpacity: 0.35,
+              }}
+            />
+          </GoogleMap>
+        ) : (
+          <div>Loading map...</div>
+        )}
       </LoadScript>
-      <ETADisplay estimatedTime={estimatedTime} />
+      {nextStop && (
+        <ETADisplay estimatedTime={estimatedTime} nextStop={nextStop} />
+      )}
     </>
   );
 };
-
 export default MapComponent;
